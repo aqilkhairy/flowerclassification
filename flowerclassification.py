@@ -5,7 +5,6 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from PIL import Image, ImageTk
 
-
 def select_file():
     # open file dialog
     filePath = fd.askopenfilename()
@@ -17,7 +16,7 @@ def select_file():
 
 def start_classification():
     # load the model
-    trained_model = load_model('model.h5')
+    trained_model = load_model('model/model.h5')
 
     # get the file name from the GUI
     fileName = pathTextField.get()
