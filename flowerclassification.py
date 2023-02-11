@@ -1,29 +1,51 @@
 import tkinter as tk
 from tkinter import filedialog as fd
+
 import numpy as np
+
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+
 from PIL import Image, ImageTk
 
+# load the model
+trained_model = load_model('model/model.h5')
+
+# define class names
+class_names = ['Daisy', 'Dandelion', 'Rose', 'Sunflower', 'Tulip']
+
+filePath = ''
 def select_file():
+    global filePath
     # open file dialog
     filePath = fd.askopenfilename()
     
-    # write the file path on text field
-    pathTextField.delete(0, tk.END)
-    pathTextField.insert(0, filePath)
+    # write the file path on text label
+    pathLabel.config(text = "Image Path: " + filePath)
+    
+    # display image in GUI
+    image = ImageTk.PhotoImage(Image.open(filePath))
+    imageLabel.config(image=image, width = 200, height = 200)
+    imageLabel.image = image
+    
+    # enable predict button
+    button.config(state = "active")
 
+def reset():
+    global filePath
+    # reset all widget to default state
+    filePath = ''
+    pathLabel.config(text = "No image selected")
+    imageLabel.config(image = None)
+    imageLabel.image = None
+    button.config(state = "disabled")
+    predictionLabel.config(text = "Classification: not started")
+    scoreLabel.config(text = "Prediction Score: not started")
 
 def start_classification():
-    # load the model
-    trained_model = load_model('model/model.h5')
-
-    # get the file name from the GUI
-    fileName = pathTextField.get()
-
-    # load the image and preprocess it
+    # preprocess image
     img = tf.keras.utils.load_img(
-        fileName, target_size=(180, 180))
+        filePath, target_size=(180, 180))
     imageArray = tf.keras.utils.img_to_array(img)
     imageArray = tf.expand_dims(imageArray, 0) 
 
@@ -33,41 +55,53 @@ def start_classification():
     # get highest score among classes
     score = tf.nn.softmax(predictions[0])
 
-    # define class names
-    class_names = ['Daisy', 'Dandelion', 'Rose', 'Sunflower', 'Tulip']
-
     # get the predicted class & score 
     predicted_class = class_names[np.argmax(score)]
     predicted_score = "{:.2f}".format(100 * np.max(score))
 
-    # display the image output
-    image = ImageTk.PhotoImage(Image.open(fileName))
-    label_image.config(image=image)
-    label_image.image = image
-    label_prediction.config(text=predicted_class)
-    label_predictionArray.config(text=str(predicted_score + '%'))
+    # display the classification result
+    predictionLabel.config(text = "Classification: " + predicted_class)
+    scoreLabel.config(text=str("Prediction Score: " + predicted_score + '%'))
+    
 
-# GUI widgets definition
-root = tk.Tk()
-root.title("Flower Classification")
+# GUI widgets
+window = tk.Tk()
+window.geometry("500x500")
+window.resizable(False, False)
+window.title("Flower Classification")
 
-pathTextField = tk.Entry(root)
-pathTextField.pack()
+baseFrame = tk.Frame(window)
+baseFrame.pack()
 
-button_file = tk.Button(root, text="Select an Image", command=select_file)
-button_file.pack()
+loadImageOperationFrame = tk.LabelFrame(baseFrame, text="Load Image")
+loadImageOperationFrame.pack(fill = tk.BOTH)
 
-button = tk.Button(root, text="Predict", command=start_classification)
-button.pack()
+loadImageFrame = tk.LabelFrame(baseFrame, text="Image")
+loadImageFrame.pack(fill = tk.BOTH)
 
-label_image = tk.Label(root, text="Label Image")
-label_image.pack()
+operationFrame = tk.LabelFrame(baseFrame, text="Classification")
+operationFrame.pack(fill = tk.BOTH)
 
-label_prediction = tk.Label(root, text="Label Prediction")
-label_prediction.pack()
+pathLabel = tk.Label(loadImageOperationFrame, text = "No image selected")
+pathLabel.grid(row = 0, column = 0)
 
-label_predictionArray = tk.Label(root, text="Label Prediction Score")
-label_predictionArray.pack()
+selectImageButton = tk.Button(loadImageOperationFrame, text="Select an Image", command = select_file)
+selectImageButton.grid(row = 1, column = 0, sticky = "news", padx = 10, pady = 5)
+
+resetButton = tk.Button(loadImageOperationFrame, text = "Reset", command=reset)
+resetButton.grid(row = 1, column = 1, padx = 10, pady = 5)
+
+imageLabel = tk.Label(loadImageFrame)
+imageLabel.grid(row = 0, column = 0,padx = 5, pady = 5, sticky= tk.NSEW)
+
+button = tk.Button(operationFrame, text="Predict", command = start_classification, state = "disabled")
+button.grid(row = 0, column = 0, sticky = "news", padx = 10, pady = 5)
+
+predictionLabel = tk.Label(operationFrame, text = "Classification: not started")
+predictionLabel.grid(row = 1, column = 0)
+
+scoreLabel = tk.Label(operationFrame, text = "Prediction Score: not started")
+scoreLabel.grid(row = 2, column = 0)
 
 #main loop function
-root.mainloop()
+window.mainloop()
