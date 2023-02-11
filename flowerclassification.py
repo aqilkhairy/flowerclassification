@@ -12,32 +12,26 @@ def load_predict():
     file_name = entry.get()
 
     # load the image and preprocess it
-    image = Image.open(file_name)
-    image = image.resize((180, 180))
-    image = np.array(image) / 255.0
-    image = np.expand_dims(image, axis=0)
+    img = tf.keras.utils.load_img(
+    file_name, target_size=(180, 180)
+    )
+    img_array = tf.keras.utils.img_to_array(img)
+    img_array = tf.expand_dims(img_array, 0) # Create a batch
 
-    # use the model to make a prediction
-    prediction = model.predict(image)
-    
-    #get score
-    score = tf.nn.softmax(prediction[0])
+    predictions = model.predict(img_array)
+    score = tf.nn.softmax(predictions[0])
 
-    # define the list of class names
     class_names = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
     
-    # get the class index with the highest probability
-    class_index = np.argmax(score)
-    
-    # get the class name corresponding to the class index
-    class_name = class_names[class_index]
-    
+    predicted_class = class_names[np.argmax(score)]
+    predicted_score = "{:.2f}".format(100 * np.max(score))
+
     # display the image and the prediction in the GUI
     image = ImageTk.PhotoImage(Image.open(file_name))
     label_image.config(image=image)
     label_image.image = image
-    label_prediction.config(text=class_name)
-    label_predictionArray.config(text=str(np.max(score) * 100))
+    label_prediction.config(text=predicted_class)
+    label_predictionArray.config(text=str(predicted_score + '%'))
 
 # create the GUI
 root = tk.Tk()
