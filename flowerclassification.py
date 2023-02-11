@@ -1,46 +1,64 @@
-import tensorflow as tf
 import tkinter as tk
+from tkinter import filedialog as fd
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 from PIL import Image, ImageTk
 
-def load_predict():
+
+def select_file():
+    # open file dialog
+    filePath = fd.askopenfilename()
+    
+    # write the file path on text field
+    pathTextField.delete(0, tk.END)
+    pathTextField.insert(0, filePath)
+
+
+def start_classification():
     # load the model
-    model = load_model('model.h5')
+    trained_model = load_model('model.h5')
 
     # get the file name from the GUI
-    file_name = entry.get()
+    fileName = pathTextField.get()
 
     # load the image and preprocess it
     img = tf.keras.utils.load_img(
-    file_name, target_size=(180, 180)
-    )
-    img_array = tf.keras.utils.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0) # Create a batch
+        fileName, target_size=(180, 180))
+    imageArray = tf.keras.utils.img_to_array(img)
+    imageArray = tf.expand_dims(imageArray, 0) 
 
-    predictions = model.predict(img_array)
+    # start prediction
+    predictions = trained_model.predict(imageArray)
+    
+    # get highest score among classes
     score = tf.nn.softmax(predictions[0])
 
-    class_names = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
-    
+    # define class names
+    class_names = ['Daisy', 'Dandelion', 'Rose', 'Sunflower', 'Tulip']
+
+    # get the predicted class & score 
     predicted_class = class_names[np.argmax(score)]
     predicted_score = "{:.2f}".format(100 * np.max(score))
 
-    # display the image and the prediction in the GUI
-    image = ImageTk.PhotoImage(Image.open(file_name))
+    # display the image output
+    image = ImageTk.PhotoImage(Image.open(fileName))
     label_image.config(image=image)
     label_image.image = image
     label_prediction.config(text=predicted_class)
     label_predictionArray.config(text=str(predicted_score + '%'))
 
-# create the GUI
+# GUI widgets definition
 root = tk.Tk()
-root.title("Image Classification")
+root.title("Flower Classification")
 
-entry = tk.Entry(root)
-entry.pack()
+pathTextField = tk.Entry(root)
+pathTextField.pack()
 
-button = tk.Button(root, text="Predict", command=load_predict)
+button_file = tk.Button(root, text="Select an Image", command=select_file)
+button_file.pack()
+
+button = tk.Button(root, text="Predict", command=start_classification)
 button.pack()
 
 label_image = tk.Label(root, text="Label Image")
@@ -52,4 +70,5 @@ label_prediction.pack()
 label_predictionArray = tk.Label(root, text="Label Prediction Score")
 label_predictionArray.pack()
 
+#main loop function
 root.mainloop()
